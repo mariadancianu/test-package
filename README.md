@@ -1,6 +1,6 @@
 # My Awesome Library
 
-A simple Python library that demonstrates basic functionality.
+A simple Python package for learning and experimenting with GitHub Actions workflows. Includes examples for automating version tags, building packages, and creating releases.
 
 ## Installation
 
