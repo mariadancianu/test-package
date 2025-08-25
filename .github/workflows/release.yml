@@ -6,43 +6,40 @@ on:
       - main
 
 permissions:
-  contents: write   # needed to push tags & create release
+  contents: write # needed to push tags & create release
 
 jobs:
   release:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
+          
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
-
+          
       - name: Install tools
         run: |
           python -m pip install --upgrade pip
           pip install build tomli
-
+          
       - name: Read version from pyproject.toml
         id: version
         run: |
           python - <<'PYCODE'
-import tomli
-import pathlib
-
-# Read version from pyproject.toml
-data = tomli.loads(pathlib.Path("pyproject.toml").read_text())
-version = data["project"]["version"]
-
-# Write version to GitHub Actions output
-with open("$GITHUB_OUTPUT", "a") as f:
-    f.write(f"version={version}\n")
-PYCODE
-
+          import tomli
+          import pathlib
+          # Read version from pyproject.toml
+          data = tomli.loads(pathlib.Path("pyproject.toml").read_text())
+          version = data["project"]["version"]
+          # Write version to GitHub Actions output
+          with open("$GITHUB_OUTPUT", "a") as f:
+              f.write(f"version={version}\n")
+          PYCODE
+          
       - name: Check if tag exists
         id: tagcheck
         run: |
@@ -51,7 +48,7 @@ PYCODE
           else
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
-
+          
       - name: Create git tag
         if: steps.tagcheck.outputs.exists == 'false'
         run: |
@@ -59,10 +56,10 @@ PYCODE
           git config user.email "github-actions@github.com"
           git tag v${{ steps.version.outputs.version }}
           git push origin v${{ steps.version.outputs.version }}
-
+          
       - name: Build package
         run: python -m build
-
+        
       - name: Create GitHub Release
         if: steps.tagcheck.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
