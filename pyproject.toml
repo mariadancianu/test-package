@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "my-first-package"
+version = "0.1.0"
+description = "A small example package"
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [
+  { name="Maria Dancianu", email="mariadanci1994@gmail.com" }
+]
+dependencies = [
+  "requests",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
