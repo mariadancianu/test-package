@@ -26,5 +26,6 @@ After the installation, users can import the package in Python:
 
 ```bash
 import my_first_package
+my_first_package.greet_user("Maria")
 # or whatever modules are needed from the package
 ```
