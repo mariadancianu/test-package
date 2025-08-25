@@ -1,13 +1,10 @@
 name: Auto Tag & Release
-
 on:
   push:
     branches:
       - main
-
 permissions:
   contents: write # needed to push tags & create release
-
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -15,51 +12,75 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          
+      
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
-          
+      
       - name: Install tools
         run: |
           python -m pip install --upgrade pip
           pip install build tomli
-          
+      
       - name: Read version from pyproject.toml
         id: version
         run: |
-          python - <<'PYCODE'
+          python3 << 'EOF'
           import tomli
           import pathlib
-          # Read version from pyproject.toml
-          data = tomli.loads(pathlib.Path("pyproject.toml").read_text())
-          version = data["project"]["version"]
-          # Write version to GitHub Actions output
-          with open("$GITHUB_OUTPUT", "a") as f:
-              f.write(f"version={version}\n")
-          PYCODE
+          import os
           
+          # Read version from pyproject.toml
+          try:
+              with open("pyproject.toml", "rb") as f:
+                  data = tomli.load(f)
+              version = data["project"]["version"]
+              print(f"Found version: {version}")
+              
+              # Write version to GitHub Actions output
+              with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+                  f.write(f"version={version}\n")
+          except Exception as e:
+              print(f"Error reading version: {e}")
+              exit(1)
+          EOF
+      
+      - name: Verify version was read
+        run: |
+          echo "Version read: ${{ steps.version.outputs.version }}"
+          if [ -z "${{ steps.version.outputs.version }}" ]; then
+            echo "ERROR: Version is empty!"
+            exit 1
+          fi
+      
       - name: Check if tag exists
         id: tagcheck
         run: |
-          if git rev-parse "v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+          TAG="v${{ steps.version.outputs.version }}"
+          echo "Checking for tag: $TAG"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists"
             echo "exists=true" >> $GITHUB_OUTPUT
           else
+            echo "Tag $TAG does not exist"
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
-          
+      
       - name: Create git tag
         if: steps.tagcheck.outputs.exists == 'false'
         run: |
+          TAG="v${{ steps.version.outputs.version }}"
+          echo "Creating tag: $TAG"
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git tag v${{ steps.version.outputs.version }}
-          git push origin v${{ steps.version.outputs.version }}
-          
+          git tag "$TAG"
+          git push origin "$TAG"
+      
       - name: Build package
+        if: steps.tagcheck.outputs.exists == 'false'
         run: python -m build
-        
+      
       - name: Create GitHub Release
         if: steps.tagcheck.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
@@ -67,3 +88,4 @@ jobs:
           tag_name: v${{ steps.version.outputs.version }}
           name: Release v${{ steps.version.outputs.version }}
           files: dist/*
+          generate_release_notes: true
