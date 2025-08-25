@@ -11,6 +11,7 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -30,12 +31,17 @@ jobs:
         id: version
         run: |
           python - <<'PYCODE'
-          import tomli, pathlib
-          data = tomli.loads(pathlib.Path("pyproject.toml").read_text())
-          print(f"version={data['project']['version']}")
-          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-              f.write(f"version={data['project']['version']}\n")
-          PYCODE
+import tomli
+import pathlib
+
+# Read version from pyproject.toml
+data = tomli.loads(pathlib.Path("pyproject.toml").read_text())
+version = data["project"]["version"]
+
+# Write version to GitHub Actions output
+with open("$GITHUB_OUTPUT", "a") as f:
+    f.write(f"version={version}\n")
+PYCODE
 
       - name: Check if tag exists
         id: tagcheck
